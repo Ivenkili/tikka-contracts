@@ -206,8 +206,10 @@ pub struct RaffleConfig {
     /// Maximum tickets a single address may purchase per transaction.
     /// Zero is invalid and rejected during initialization with `Error::InvalidParameters` (must be in 1..=max_tickets).
     pub max_tickets_per_tx: u32,
-    /// Reserved per-address ticket cap (0 = unlimited). Enforcement and
-    /// initialization validation are not implemented yet.
+    /// Maximum tickets a single address may own. Zero means unlimited unless
+    /// `allow_multiple` is false, in which case the effective cap is one.
+    /// Validated at initialization to be no greater than `max_tickets` and
+    /// enforced on every ticket purchase.
     pub max_tickets_per_address: u32,
     /// Minimum number of tickets required for a successful draw.
     pub min_tickets: u32,

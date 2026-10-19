@@ -53,6 +53,12 @@ When `no_deadline` is `true`, `end_time` is not enforced by any of the above; `R
 
 A single entry in a raffle draw owned by a participant. Each ticket represents one chance to win. A ticket is identified by a monotonic `id` unique to the raffle, recorded with the owner's address and purchase timestamp. See [`docs/EVENTS.md`](EVENTS.md) for the `TicketPurchased` event structure.
 
+### Per-Address Ticket Limit
+
+`RaffleConfig::max_tickets_per_address` sets the maximum tickets one address may purchase. A value of `0` means unlimited when `allow_multiple` is `true`; when `allow_multiple` is `false`, the effective limit is one regardless of the configured value. At initialization, the configured cap must be no greater than `max_tickets`, and the effective limit is enforced on every purchase path.
+
+**Code reference**: [`contracts/raffle-shared/src/lib.rs`](../contracts/raffle-shared/src/lib.rs) — `RaffleConfig.max_tickets_per_address`, `RaffleConfig.allow_multiple`; [`contracts/raffle-instance/src/tickets.rs`](../contracts/raffle-instance/src/tickets.rs) — `buy_tickets`, `buy_tickets_for`
+
 A ticket records two distinct addresses: the `owner`, who is entered in the draw, and the `payer`, who paid for it. They are the same address for a self-purchase and differ for a gift purchase made with `buy_tickets_for`.
 
 **Refunds follow the payer, never the owner.** Every refund path — `refund_ticket` and `batch_refund_tickets` — credits `Ticket::payer` with `Ticket::price_paid`, so a refund always returns funds to the party that was out of pocket. For a gift purchase the owner receives nothing, and for a self-purchase payer and owner coincide. `refund_ticket` requires authorization from the payer; `batch_refund_tickets` may be called by either the payer or the owner of the ticket, but the funds are always sent to the payer.
