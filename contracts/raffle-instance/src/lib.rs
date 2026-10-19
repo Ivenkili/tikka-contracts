@@ -56,7 +56,7 @@ use raffle_shared::{
 };
 
 use self::randomness::{
-    build_vrf_proof_message, OracleSeedWinnerSelection, WinnerSelectionStrategy,
+    build_vrf_proof_message, OracleSeedWinnerSelection,
 };
 
 use crate::events::{
