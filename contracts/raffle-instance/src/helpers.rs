@@ -883,23 +883,6 @@ fn checked_add(lhs: i128, rhs: i128, label: &str) -> i128 {
 }
 
 #[cfg(any(test, feature = "testutils"))]
-fn ticket_payment_amount(raffle: &Raffle, ticket_id: u32) -> i128 {
-    let discounted_tickets =
-        (raffle.max_tickets as u64 * raffle.early_bird_ticket_percentage as u64 / 100) as u32;
-    if ticket_id > discounted_tickets || raffle.early_bird_discount_bp == 0 {
-        return raffle.ticket_price;
-    }
-
-    let discount = raffle_shared::apply_bp(raffle.ticket_price, raffle.early_bird_discount_bp)
-    let discount = apply_bp(raffle.ticket_price, raffle.early_bird_discount_bp)
-        .expect("solvency invariant overflow while calculating early-bird discount");
-    raffle
-        .ticket_price
-        .checked_sub(discount)
-        .expect("solvency invariant underflow while calculating early-bird ticket payment")
-}
-
-#[cfg(any(test, feature = "testutils"))]
 fn unrefunded_ticket_total(env: &Env, raffle: &Raffle) -> i128 {
     if matches!(raffle.status, RaffleStatus::Finalized | RaffleStatus::Claimed) {
         return 0;
@@ -908,15 +891,17 @@ fn unrefunded_ticket_total(env: &Env, raffle: &Raffle) -> i128 {
     let mut total = 0i128;
     for ticket_id in 1..=raffle.tickets_sold {
         if !env.storage().persistent().has(&DataKey::TicketRefunded(ticket_id)) {
-            // Use the price actually charged (bundles / early-bird / fee
-            // rounding) rather than recomputing it from the config, so the
-            // escrow identity matches what `refund_ticket` will pay out.
             let paid = env
                 .storage()
                 .persistent()
                 .get::<_, crate::Ticket>(&DataKey::Ticket(ticket_id))
                 .map(|t| t.price_paid)
-                .unwrap_or_else(|| ticket_payment_amount(raffle, ticket_id));
+                .unwrap_or_else(|| {
+                    panic!(
+                        "solvency invariant: missing record for unrefunded ticket {}",
+                        ticket_id
+                    )
+                });
             total = checked_add(total, paid, "ticket refunds");
         }
     }
